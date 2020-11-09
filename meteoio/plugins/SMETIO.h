@@ -52,6 +52,8 @@ class SMETIO : public IOInterface {
 		                            const std::string& name="");
 
 		virtual void readPOI(std::vector<Coords>& pts);
+		//FELIX
+		virtual void readPVP(std::vector<std::vector<double> >& pv);
 
 	private:
 		/** This structure contains the metadata associated with a SMET variable in order to plot it */
