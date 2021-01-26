@@ -57,18 +57,18 @@ class SunObject {
 		double getElevationThresh() const {return elevation_threshold;}
 
 		double getSplittingBoland(const double& iswr_modeled, const double& iswr_measured, const double& t) const;
-		double getSplitting(const double& iswr_modeled, const double& iswr_measured) const;
+		double getSplitting(const double& toa_h, const double& iswr_measured) const;
 		double getSplitting(const double& iswr_measured) const;
 		double getCorrectionFactor(const double& iswr_measured, double &Md, bool &day, bool &night) const;
 		double getCorrectionFactor(const double& iswr_measured) const;
 
 		double getJulian(const double& o_TZ) const {return (julian_gmt+o_TZ*1./24.);}
 		const std::string toString() const;
-		
+
 		//SunTrajectory position;
 		SunMeeus position;
 		static const double elevation_dftlThreshold, rad_threshold;
-		
+
 	private:
 		void getBeamPotential(const double& sun_elevation, const double& Eccentricity_corr,
 		                      const double& ta, const double& rh, const double& pressure, const double& mean_albedo,

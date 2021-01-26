@@ -75,15 +75,15 @@ void SunObject::setLatLon(const double& i_latitude, const double& i_longitude, c
 		ss << "missing geolocalization parameters at (" << i_latitude << " , " << i_longitude << " , " << i_altitude << ")";
 		throw NoDataException(ss.str(), AT);
 	}
-	
+
 	if (i_latitude==latitude && i_longitude==longitude) {
 		if (altitude==i_altitude) return; //everything is the same, nothing to do
-		
+
 		altitude = i_altitude;
 		beam_toa = beam_direct = beam_diffuse = IOUtils::nodata;
 		return;
 	}
-	
+
 	position.reset();
 	latitude = i_latitude;
 	longitude = i_longitude;
@@ -99,7 +99,7 @@ void SunObject::resetAltitude(const double& i_altitude)
 	if (i_altitude==IOUtils::nodata)
 		throw NoDataException("the altitude can not be nodata", AT);
 	if (altitude==i_altitude) return;
-	
+
 	altitude = i_altitude;
 	beam_toa = beam_direct = beam_diffuse = IOUtils::nodata;
 }
@@ -110,17 +110,17 @@ void SunObject::setElevationThresh(const double& i_elevation_threshold)
 	beam_toa = beam_direct = beam_diffuse = IOUtils::nodata;
 }
 
-void SunObject::calculateRadiation(const double& ta, const double& rh, double pressure, const double& mean_albedo) 
+void SunObject::calculateRadiation(const double& ta, const double& rh, double pressure, const double& mean_albedo)
 {	//set beam_toa, beam_direct and beam_diffuse
 	//ta in K, rh in [0,1], pressure in Pa, altitude in m
 	double azimuth, elevation, eccentricity;
 	position.getHorizontalCoordinates(azimuth, elevation, eccentricity);
-	
+
 	if (pressure==IOUtils::nodata) pressure = Atmosphere::stdAirPressure(altitude);
 	getBeamPotential(elevation, eccentricity, ta, rh, pressure, mean_albedo, beam_toa, beam_direct, beam_diffuse);
 }
 
-void SunObject::calculateRadiation(const double& ta, const double& rh, const double& mean_albedo) 
+void SunObject::calculateRadiation(const double& ta, const double& rh, const double& mean_albedo)
 {	//set beam_toa, beam_direct and beam_diffuse
 	//ta in K, rh in [0,1], pressure in Pa, altitude in m
 	double azimuth, elevation, eccentricity;
@@ -153,9 +153,9 @@ void SunObject::getClearSky(const double& sun_elevation, const double& R_toa,
                             const double& ta, const double& rh, const double& pressure, const double& ground_albedo,
                             double& R_direct, double& R_diffuse) const
 {
-	if (ta<0. || rh<0.) 
+	if (ta<0. || rh<0.)
 		throw InvalidArgumentException("When calling SunObject::getClearSky(), TA and RH must be >0, currently TA="+IOUtils::toString(ta)+", RH="+IOUtils::toString(rh), AT);
-	
+
 	//these pow cost us a lot here, but replacing them by fastPow() has a large impact on accuracy (because of the exp())
 	static const double olt = 0.32;   //ozone layer thickness (cm) U.S.standard = 0.34 cm
 	static const double w0 = 0.9;     //fraction of energy scattered to total attenuation by aerosols (Bird and Hulstrom(1981))
@@ -248,7 +248,7 @@ void SunObject::getClearSky(const double& sun_elevation, const double& R_toa,
 	// cloudless sky albedo Bird and Hulstrom (1980, 1981) (in Iqbal (1983) p. 190)
 	//in Iqbal, it is recomputed with ma=1.66*pressure/101325.; and alb_sky=0.0685+0.17*(1.-taua_p)*w0;
 	const double alb_sky = 0.0685 + (1. - fc) * (1. - tauas);
-
+  //std::cout << std::setprecision(4) << alb_sky << std::endl;
 
 	//Now, we compute the direct and diffuse radiation components
 	//Direct radiation. All transmitances, including Rayleigh scattering (Iqbal (1983), p.189)
@@ -298,18 +298,18 @@ void SunObject::getSlopeRadiation(const double& slope_azi, const double& slope_e
  * D. G. Erbs, S.A. Klein, J.A. Duffie, <i>"Estimation of the diffuse radiation fraction for hourly, daily and monthly-average global radiation"</i>, Solar Energy, <b>28</b>, 4, 1982, Pages 293-302 and
  * M. Iqbal, <i>"An introduction to solar radiation"</i>, 1983, Academic Press,  ISBN: 0-12-373750-8 and
  * D. T. Reindl, W. A. Beckman, J. A. Duffle, <i>"Diffuse fraction correlations</i>, Solar Energy, <b>45</b>, 1990, pp 1-7.
- * @param iswr_modeled modelled radiation, it should be horizontal Top Of %Atmosphere Radiation (W/m²)
+ * @param toa_h modelled radiation, it should be horizontal Top Of Atmosphere Radiation (W/m²)
  * @param iswr_measured measured Incoming Short Wave Radiation on the ground (W/m²)
  * @return splitting coefficient (between 0 and 1, 1 being 100% diffuse radiation)
  */
-double SunObject::getSplitting(const double& iswr_modeled, const double& iswr_measured) const
+double SunObject::getSplitting(const double& toa_h, const double& iswr_measured) const
 {
-	if (iswr_modeled==IOUtils::nodata)
-		throw NoDataException("modelled ISWR can not be nodata, please call Sun::calculateRadiation() before!", AT);
-	
+	if (toa_h==IOUtils::nodata)
+		throw NoDataException("modelled top of atmoshpere ISWR can not be nodata, please call Sun::calculateRadiation() before!", AT);
+
 	if (iswr_measured==IOUtils::nodata)
 		throw NoDataException("measured ISWR can not be nodata", AT);
-	
+
 	double splitting_coef;
 	double azimuth, elevation;
 	position.getHorizontalCoordinates(azimuth, elevation);
@@ -321,7 +321,7 @@ double SunObject::getSplitting(const double& iswr_modeled, const double& iswr_me
 		splitting_coef = 1.0;
 	} else {
 		// clear sky index (ratio global measured to top of atmosphere radiation)
-		const double Mt = iswr_measured / iswr_modeled; // should be <=1.2, aka clearness index Kt
+		const double Mt = iswr_measured / toa_h; //(toa_h*sin(elevation*Cst::to_rad)); // should be <=1.2, aka clearness index Kt
 		static const double clear_sky = 0.147;
 
 		// diffuse fraction: hourly ratio of diffuse to global radiation incident on a horizontal surface
@@ -347,7 +347,7 @@ double SunObject::getSplitting(const double& iswr_modeled, const double& iswr_me
  * @brief Evaluate the splitting coefficient between direct and diffuse components of the
  * incoming short wave radiation. Splitting is based on "clearness of the sky", ie. the ratio of
  * measured incoming global radiation to top of the atmosphere radiation toa_h.
- * This is based on Boland, John, Lynne Scott, and Mark Luther, <i>"Modelling the diffuse fraction 
+ * This is based on Boland, John, Lynne Scott, and Mark Luther, <i>"Modelling the diffuse fraction
  * of global solar radiation on a horizontal surface"</i>, Environmetrics <b>12.2</b>, 2001, pp103-116.
  * @param iswr_modeled modelled radiation, it should be horizontal Top Of %Atmosphere Radiation (W/m²)
  * @param iswr_measured measured Incoming Short Wave Radiation on the ground (W/m²)
@@ -358,10 +358,10 @@ double SunObject::getSplittingBoland(const double& iswr_modeled, const double& i
 {
 	if (iswr_modeled==IOUtils::nodata)
 		throw NoDataException("modelled ISWR can not be nodata, please call Sun::calculateRadiation() before!", AT);
-	
+
 	if (iswr_measured==IOUtils::nodata)
 		throw NoDataException("measured ISWR can not be nodata", AT);
-	
+
 	static const double clear_sky = 0.147;
 	double splitting_coef;
 	double azimuth, elevation;
@@ -379,7 +379,7 @@ double SunObject::getSplittingBoland(const double& iswr_modeled, const double& i
 		static const double beta_1 = 7.325;
 		static const double beta_2 = 0.377;
 		static const double c = -0.039;
-		
+
 		splitting_coef = c + (1-c) / (1 + exp( beta_0 + beta_1*kt + beta_2*t) ); //complex fit
 		//splitting_coef = 1. / (1 + exp(7.997*(kt-0.586))); //simple fit
 	}
@@ -422,12 +422,12 @@ double SunObject::getCorrectionFactor(const double& iswr_measured, double &Md, b
 {
 	if (iswr_measured==IOUtils::nodata)
 		throw NoDataException("measured ISWR can not be nodata", AT);
-	
+
 	double toa_h, direct_h, pot_diffuse;
 	getHorizontalRadiation(toa_h, direct_h, pot_diffuse);
 	Md = getSplitting(toa_h, iswr_measured);
 	const double pot_glob_h = direct_h+pot_diffuse;
-	
+
 	//we compare the mesured radiation to the modeled radiation, in order to guess the cloudiness.
 	//This comparison allows us to compute a global correction factor
 	if ( pot_glob_h>rad_threshold && iswr_measured>rad_threshold ) {
