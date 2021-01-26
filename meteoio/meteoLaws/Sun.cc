@@ -321,7 +321,7 @@ double SunObject::getSplitting(const double& toa_h, const double& iswr_measured)
 		splitting_coef = 1.0;
 	} else {
 		// clear sky index (ratio global measured to top of atmosphere radiation)
-		const double Mt = iswr_measured / toa_h; //(toa_h*sin(elevation*Cst::to_rad)); // should be <=1.2, aka clearness index Kt
+		const double Mt = iswr_measured / (toa_h*sin(elevation*Cst::to_rad)); // should be <=1.2, aka clearness index Kt
 		static const double clear_sky = 0.147;
 
 		// diffuse fraction: hourly ratio of diffuse to global radiation incident on a horizontal surface
