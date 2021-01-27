@@ -41,7 +41,7 @@ class GridsManager;
 class Grid2DObject {
 	friend class IOInterface;
 	friend class GridsManager;
-	
+
 	public:
 		///structure to contain the grid coordinates of a point in a 2D grid
 		typedef struct GRID_POINT_2D {
@@ -132,12 +132,18 @@ class Grid2DObject {
 		         const double& cellsize, const Coords& i_llcorner, const double& init);
 
 		void set(const Grid2DObject& i_grid, const double& init);
-		
+
 		/**
 		* @brief Rescale (bilinear resampling) the grid to match the given cell size.
 		* @param i_cellsize new value for cellsize
 		*/
 		void rescale(const double& i_cellsize);
+
+    /**
+		* @brief Compute spatial mean
+		* @param radius for the mean to be computed
+		*/
+		void compute_spatial_mean(const double radius);
 
 		void size(size_t& o_ncols, size_t& o_nrows) const;
 		size_t size() const;
@@ -223,15 +229,15 @@ class Grid2DObject {
 		* @return false if the given point was invalid (outside the grid or nodata and if possible sets (i,j) to closest values within the grid)
 		*/
 		bool grid_to_WGS84(Coords& point) const;
-		
+
 		bool isLatlon() const {return isLatLon;}
-		
+
 		void reproject();
 
 		static double calculate_XYcellsize(const std::vector<double>& vecX, const std::vector<double>& vecY);
 		double calculate_cellsize(const double& i_ur_lat, const double& i_ur_lon) const;
 		void setLatLon(const double& i_ur_lat, const double& i_ur_lon) {ur_lat=i_ur_lat; ur_lon=i_ur_lon; isLatLon=true;}
-		
+
 		double ur_lat, ur_lon;
 		bool isLatLon;
 };
