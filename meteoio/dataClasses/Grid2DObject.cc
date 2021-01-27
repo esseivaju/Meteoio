@@ -192,7 +192,7 @@ Grid2DObject::Grid2DObject(const Grid2DObject& i_grid2Dobj, const size_t& i_nx, 
 	}
 }
 
-bool Grid2DObject::gridify(std::vector<Coords>& vec_points, const bool& keep_invalid) const 
+bool Grid2DObject::gridify(std::vector<Coords>& vec_points, const bool& keep_invalid) const
 {
 	bool status=true;
 	std::vector<Coords>::iterator v_Itr = vec_points.begin();
@@ -209,7 +209,7 @@ bool Grid2DObject::gridify(std::vector<Coords>& vec_points, const bool& keep_inv
 	return status;
 }
 
-bool Grid2DObject::gridify(std::vector<StationData>& vec_points, const bool& keep_invalid) const 
+bool Grid2DObject::gridify(std::vector<StationData>& vec_points, const bool& keep_invalid) const
 {
 	bool status=true;
 	std::vector<StationData>::iterator v_Itr = vec_points.begin();
@@ -226,7 +226,7 @@ bool Grid2DObject::gridify(std::vector<StationData>& vec_points, const bool& kee
 	return status;
 }
 
-bool Grid2DObject::gridify(Coords& point) const 
+bool Grid2DObject::gridify(Coords& point) const
 {
 	std::string proj_type, proj_args;
 	point.getProj(proj_type, proj_args);
@@ -266,7 +266,7 @@ bool Grid2DObject::grid_to_WGS84(Coords& point) const
 		point.setGridIndex(ii, jj, IOUtils::inodata, false); //mark the point as invalid
 		return false;
 	}
-	
+
 	if (ur_lat!=IOUtils::nodata && ur_lon!=IOUtils::nodata) { //use lat/lon extraction if possible
 		//remember that cellsize = (ur_lon - llcorner.getLon()) / (getNx()-1.)
 		const double lon = point.getLon() + ii * (ur_lon - llcorner.getLon()) / static_cast<double>(getNx()-1);
@@ -276,7 +276,7 @@ bool Grid2DObject::grid_to_WGS84(Coords& point) const
 		//easting and northing in the grid's projection
 		const double easting = ((double)ii) * cellsize + llcorner.getEasting();
 		const double northing = ((double)jj) * cellsize + llcorner.getNorthing();
-		
+
 		if (point.isSameProj(llcorner)==true) {
 			//same projection between the grid and the point -> precise, simple and efficient arithmetics
 			point.setXY(easting, northing, IOUtils::nodata);
@@ -304,7 +304,7 @@ bool Grid2DObject::WGS84_to_grid(Coords& point) const
 
 	bool status=true;
 	int ii, jj;
-	
+
 	if (ur_lat!=IOUtils::nodata && ur_lon!=IOUtils::nodata) { //use lat/lon extraction if possible
 		//remember that cellsize = (ur_lon - llcorner.getLon()) / (getNx()-1.)
 		ii = (int)floor( (point.getLon() - llcorner.getLon()) / (ur_lon - llcorner.getLon()) * static_cast<double>(getNx()-1)); //round to lowest
@@ -379,11 +379,72 @@ void Grid2DObject::rescale(const double& i_cellsize)
 {
 	if (grid2D.getNx()==0 || grid2D.getNy()==0)
 		throw InvalidArgumentException("Can not rescale an empty grid!", AT);
-	
+
 	const double factor_x = cellsize / i_cellsize;
 	const double factor_y = cellsize / i_cellsize;
 	grid2D = LibResampling2D::Bilinear(grid2D, factor_x, factor_y);
 	cellsize = i_cellsize;
+}
+
+void Grid2DObject::compute_spatial_mean(const double radius)
+{
+  if (radius<=0)
+		throw InvalidArgumentException("Radius provided should be >0", AT);
+  if(radius>getNx()*cellsize && radius>getNx()*cellsize)
+  {
+    grid2D=grid2D.getMean();
+    return;
+  }
+  size_t num_cell = static_cast<size_t>(std::ceil(radius/cellsize));
+  if(num_cell==1)
+    return;
+
+  size_t kernel_size=num_cell*2+1;
+  Array2D<double> kernel(kernel_size,kernel_size,1);
+  for(size_t k=0; k<kernel_size;++k)
+  {
+      for(size_t l=0; l<kernel_size;++l)
+    {
+      size_t dx=num_cell > k ? num_cell - k : k - num_cell;
+      size_t dy=num_cell > l ? num_cell - l : l - num_cell;
+      if(dx*dx+dy*dy>(num_cell)*(num_cell))
+      {
+        kernel(k,l)=0;
+      }
+    }
+  }
+
+  Array2D<double> grid2D_tmp{grid2D};
+  size_t nx=getNx();
+  size_t ny=getNy();
+
+  for(size_t i=0; i<nx;++i)
+  {
+    for(size_t j=0; j<ny;++j)
+    {
+      double sum=0;
+      size_t count=0;
+      for(size_t k=0; k<kernel_size;++k)
+      {
+        size_t i_k=i-num_cell+k;
+        if(i_k >= nx)
+          continue;
+        for(size_t l=0; l<kernel_size;++l)
+        {
+          size_t j_l=j-num_cell+l;
+          if(j_l >= ny || kernel(k,l)==0 || grid2D(i_k,j_l)==mio::IOUtils::nodata )
+            continue;
+          sum+=kernel(k,l)*grid2D(i_k,j_l);
+          ++count;
+        }
+      }
+      if(count==0)
+        grid2D_tmp(i,j)=mio::IOUtils::nodata;
+      else
+        grid2D_tmp(i,j)=sum/count;
+    }
+  }
+  grid2D=grid2D_tmp;
 }
 
 void Grid2DObject::size(size_t& o_ncols, size_t& o_nrows) const {
@@ -423,7 +484,7 @@ bool Grid2DObject::isSameGeolocalization(const Grid2DObject& target) const
 	const bool isSameLoc = grid2D.getNx()==target.grid2D.getNx() &&
 	                     grid2D.getNy()==target.grid2D.getNy() &&
 	                     llcorner==target.llcorner &&
-	                     (cellsize==target.cellsize 
+	                     (cellsize==target.cellsize
 	                     || (ur_lat==target.ur_lat && ur_lon==target.ur_lon));
 
 	return isSameLoc;
@@ -471,7 +532,7 @@ double Grid2DObject::calculate_cellsize(const double& i_ur_lat, const double& i_
 	//round to 1cm precision for numerical stability (and size()-1 because of the intervals thing)
 	const double cellsize_x = static_cast<double>(mio::Optim::round( distanceX / static_cast<double>(getNx()-1)*100. )) / 100.;
 	const double cellsize_y = static_cast<double>(mio::Optim::round( distanceY / static_cast<double>(getNy()-1)*100. )) / 100.;
-	
+
 	return std::min(cellsize_x, cellsize_y);
 }
 
