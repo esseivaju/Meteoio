@@ -45,8 +45,6 @@ class IOManager {
 		void readLanduse(Grid2DObject& landuse_out) {gdm1.readLanduse(landuse_out);}
 		void readGlacier(Grid2DObject& glacier_out) {gdm1.readGlacier(glacier_out);}
 		void readPOI(std::vector<Coords>& pts) {iohandler.readPOI(pts);}
-		//FELIX
-		void readPVP(std::vector<std::vector<double> >& pts) {iohandler.readPVP(pts);}
 		void write2DGrid(const Grid2DObject& grid_in, const std::string& options="") {gdm1.write2DGrid(grid_in, options);}
 		void write2DGrid(const Grid2DObject& grid_in, const MeteoGrids::Parameters& parameter, const Date& date) {gdm1.write2DGrid(grid_in, parameter, date);}
 		void write3DGrid(const Grid3DObject& grid_in, const std::string& options="") {gdm1.write3DGrid(grid_in, options);}

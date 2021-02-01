@@ -446,12 +446,6 @@ void IOHandler::readAssimilationData(const Date& date_in, Grid2DObject& da_out)
 	plugin->readAssimilationData(date_in, da_out);
 }
 
-// FELIX
-void IOHandler::readPVP(std::vector<std::vector<double> >& pts) {
-    IOInterface *plugin = getPlugin("PVP", "Input");
-    plugin->readPVP(pts);
-}
-
 void IOHandler::readPOI(std::vector<Coords>& pts) {
 	IOInterface *plugin = getPlugin("POI", "Input");
 	plugin->readPOI(pts);

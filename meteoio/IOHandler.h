@@ -63,8 +63,6 @@ class IOHandler : public IOInterface {
 
 		virtual void readAssimilationData(const Date&, Grid2DObject& da_out);
 		virtual void readPOI(std::vector<Coords>& pts);
-		//FELIX
-		virtual void readPVP(std::vector<std::vector<double> >& pts);
 		virtual void write2DGrid(const Grid2DObject& grid_in, const std::string& name);
 		virtual void write2DGrid(const Grid2DObject& grid_in, const MeteoGrids::Parameters& parameter, const Date& date);
 		virtual void write3DGrid(const Grid3DObject& grid_out, const std::string& options);

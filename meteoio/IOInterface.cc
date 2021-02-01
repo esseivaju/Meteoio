@@ -134,12 +134,6 @@ void IOInterface::readPOI(std::vector<Coords>& /*pts*/)
 	throw IOException("Nothing implemented here", AT);
 }
 
-//FELIX
-void IOInterface::readPVP(std::vector<std::vector<double> >& /*pts*/) 
-{
-	throw IOException("Nothing implemented here", AT);
-}
-
 void IOInterface::write2DGrid(const Grid2DObject& /*grid_out*/, const std::string& /*options=""*/)
 {
 	throw IOException("Nothing implemented here", AT);

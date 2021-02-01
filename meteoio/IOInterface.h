@@ -216,8 +216,6 @@ class IOInterface {
 		* @param pts (std::vector<Coords>) A vector of points coordinates
 		*/
 		virtual void readPOI(std::vector<Coords>& pts);
-		//FELIX
-		virtual void readPVP(std::vector<std::vector<double> >& pts);
 
 		/**
 		* @brief Write a Grid2DObject
